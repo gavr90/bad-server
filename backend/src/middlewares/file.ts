@@ -1,9 +1,22 @@
 import { Request, Express } from 'express'
 import multer, { FileFilterCallback } from 'multer'
-import { join } from 'path'
+import { join, extname } from 'path'
+import { v4 as uuidv4 } from 'uuid'
+import fs from 'fs'
+// eslint-disable-next-line import/named
+import { FILE_SIZE, ALLOWED_IMAGE_TYPES } from '../config'
 
 type DestinationCallback = (error: Error | null, destination: string) => void
 type FileNameCallback = (error: Error | null, filename: string) => void
+
+const uploadDir = join(
+    __dirname,
+    process.env.UPLOAD_PATH_TEMP
+        ? `../public/${process.env.UPLOAD_PATH_TEMP}`
+        : '../public'
+)
+
+fs.mkdirSync(uploadDir, { recursive: true })
 
 const storage = multer.diskStorage({
     destination: (
@@ -11,15 +24,7 @@ const storage = multer.diskStorage({
         _file: Express.Multer.File,
         cb: DestinationCallback
     ) => {
-        cb(
-            null,
-            join(
-                __dirname,
-                process.env.UPLOAD_PATH_TEMP
-                    ? `../public/${process.env.UPLOAD_PATH_TEMP}`
-                    : '../public'
-            )
-        )
+        cb(null, uploadDir)
     },
 
     filename: (
@@ -27,28 +32,23 @@ const storage = multer.diskStorage({
         file: Express.Multer.File,
         cb: FileNameCallback
     ) => {
-        cb(null, file.originalname)
+        cb(null, uuidv4() + extname(file.originalname))
     },
 })
-
-const types = [
-    'image/png',
-    'image/jpg',
-    'image/jpeg',
-    'image/gif',
-    'image/svg+xml',
-]
 
 const fileFilter = (
     _req: Request,
     file: Express.Multer.File,
     cb: FileFilterCallback
 ) => {
-    if (!types.includes(file.mimetype)) {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.mimetype)) {
         return cb(null, false)
     }
 
     return cb(null, true)
 }
 
-export default multer({ storage, fileFilter })
+export default multer({ storage, fileFilter, limits: {
+    // Limit max file size to 10MB
+    fileSize: FILE_SIZE.max
+} })

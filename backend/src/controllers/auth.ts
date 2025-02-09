@@ -10,6 +10,8 @@ import NotFoundError from '../errors/not-found-error'
 import UnauthorizedError from '../errors/unauthorized-error'
 import User from '../models/user'
 
+const generateCSRFToken = () => crypto.randomBytes(32).toString('hex');
+
 // POST /auth/login
 const login = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -22,11 +24,13 @@ const login = async (req: Request, res: Response, next: NextFunction) => {
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        res.cookie('csrfToken', generateCSRFToken())
         return res.json({
             success: true,
             user,
             accessToken,
         })
+        
     } catch (err) {
         return next(err)
     }
@@ -40,12 +44,12 @@ const register = async (req: Request, res: Response, next: NextFunction) => {
         await newUser.save()
         const accessToken = newUser.generateAccessToken()
         const refreshToken = await newUser.generateRefreshToken()
-
         res.cookie(
             REFRESH_TOKEN.cookie.name,
             refreshToken,
             REFRESH_TOKEN.cookie.options
         )
+        res.cookie('csrfToken', generateCSRFToken())
         return res.status(constants.HTTP_STATUS_CREATED).json({
             success: true,
             user: newUser,
