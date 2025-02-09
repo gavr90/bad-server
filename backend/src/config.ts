@@ -22,3 +22,16 @@ export const REFRESH_TOKEN = {
         } as CookieOptions,
     },
 }
+
+export const FILE_SIZE = {
+    min: 2 * 1024, 
+    max: 10 * 1024 * 1024
+}
+
+export const ALLOWED_IMAGE_TYPES = [
+    'image/png',
+    'image/jpg',
+    'image/jpeg',
+    'image/gif',
+    'image/svg+xml',
+]
